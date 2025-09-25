@@ -1,38 +1,50 @@
+// Estas são as bibliotecas utilizadas para a funcionalidade do nosso monitor de rede:
+
+#include <stdio.h>       // Biblioteca de entrada e saída (ex.: printf), amplamente utilizada em diferentes aplicações
 #include <arpa/inet.h>   // Funções de conversão de endereços (inet_ntoa, inet_pton, etc.)
-#include <sys/socket.h>  // Definições de estruturas de socket e famílias de endereços
-#include <ifaddrs.h>     // Função getifaddrs e estrutura ifaddrs (interfaces de rede)
-#include <stdio.h>       // Entrada e saída padrão (printf)
+#include <sys/socket.h>  // Define estruturas e funções para sockets (pontos de comunicação usados em rede)
+#include <ifaddrs.h>     // Permite obter informações de todas as interfaces de rede do sistema
 
-// Função para listar todas as interfaces de rede e seus endereços IPv4
-void listar_enderecos_ipv4() {
-    struct ifaddrs *ifap, *ifa;       // Ponteiros para lista encadeada de interfaces
-    struct sockaddr_in *sa;           // Estrutura para armazenar endereço IPv4
-    char *addr;                       // String com o endereço convertido
+int ipv6_printed = 0; // Marcador futuramente usado para separar os endereços IPv4 e IPv6 com uma linha em branco
 
-    // Obtém a lista de interfaces de rede do sistema
+// Função para listar todas as interfaces de rede e seus endereços IPv4/IPv6
+void listar_enderecos_ip() {
+    struct ifaddrs *ifap, *ifa;    // Ponteiros usados para percorrer a lista de interfaces de rede
+    char addr[INET6_ADDRSTRLEN];  // Espaço para armazenar o endereço IP convertido do binário para texto (IPv4 ou IPv6)
+
+    // Estrutura para obter a lista de interfaces de rede do sistema
     if (getifaddrs(&ifap) == -1) {
-        perror("Erro ao obter interfaces");  // Mensagem de erro se falhar
+        perror("Erro ao coletar as informações");  // Mensagem de erro, caso a coleta falhe por algum motivo
         return;
     }
 
-    // Percorre a lista ligada de interfaces
+    // Percorre a lista ligada de interfaces, com a utilização de um "for loop", excluindo ponteiros nulos
     for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-        // Confere se a interface tem endereço e se é da família IPv4
-        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-            sa = (struct sockaddr_in *) ifa->ifa_addr;   // Converte para sockaddr_in
-            addr = inet_ntoa(sa->sin_addr);              // Converte endereço binário para string legível
-
-            // Exibe o nome da interface (ex: eth0, wlan0, lo) e seu IP
-            printf("Interface: %s\tEndereço IPv4: %s\n", ifa->ifa_name, addr);
+        if (ifa->ifa_addr) {
+            // Verifica se o endereço é IPv4
+            if (ifa->ifa_addr->sa_family == AF_INET) {
+                struct sockaddr_in *sa = (struct sockaddr_in *)ifa->ifa_addr;
+                inet_ntop(AF_INET, &sa->sin_addr, addr, sizeof(addr));
+                printf("Interface: %s\tEndereço IPv4: %s\n", ifa->ifa_name, addr);
+            }
+            // Verifica se o endereço é IPv6
+            else if (ifa->ifa_addr->sa_family == AF_INET6) {
+                if (!ipv6_printed) {
+                    printf("\n");
+                    ipv6_printed = 1;
+                }
+                struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+                inet_ntop(AF_INET6, &sa6->sin6_addr, addr, sizeof(addr));
+                printf("Interface: %s\tEndereço IPv6: %s\n", ifa->ifa_name, addr);
+            }
         }
     }
-
     // Libera a memória alocada por getifaddrs
     freeifaddrs(ifap);
 }
 
 int main() {
     // Chama a função que lista os endereços IPv4 das interfaces
-    listar_enderecos_ipv4();
+    listar_enderecos_ip();
     return 0;
 }
