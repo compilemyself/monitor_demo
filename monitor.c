@@ -6,7 +6,7 @@
 #include <ifaddrs.h>     // Permite coletar informações sobre todas as interfaces de rede disponíveis no sistema
 
 // Variável global que separa visualmente os endereços IPv4 e IPv6 na impressão, acrescentando uma linha em branco
-int ipv6_printed = 0;
+int ipv6_ja_impresso = 0;
 
 // Função para listar todas as interfaces de rede e seus endereços IPv4/IPv6
 void listar_enderecos_ip() {
@@ -31,9 +31,9 @@ void listar_enderecos_ip() {
             // Verifica se o endereço é IPv6
             else if (ifa->ifa_addr->sa_family == AF_INET6) {
                 // Aqui é usada a variável (também chamada, neste contexto, de "flag") para acrescentar uma linha nova, sem conflito com o "for"
-                if (!ipv6_printed) {
+                if (!ipv6_ja_impresso) {
                     printf("\n");
-                    ipv6_printed = 1;
+                    ipv6_ja_impresso = 1;
                 } // Fim da estrutura da flag de nova linha, e continuação do algoritmo de identificação IPv6
                 struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
                 inet_ntop(AF_INET6, &sa6->sin6_addr, addr, sizeof(addr));
